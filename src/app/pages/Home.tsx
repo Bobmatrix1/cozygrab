@@ -53,6 +53,10 @@ export function Home({ onNavigate, onAddToCart, cartItemCount, searchQuery, acti
   const featuredProducts = products.filter(p => p.featured && filterBySearch(p));
   const bestSellers = products.filter(p => p.bestSeller && filterBySearch(p));
   const flashDeals = products.filter(p => p.flashDeal && filterBySearch(p));
+  const newArrivals = [...products]
+    .filter(filterBySearch)
+    .sort((a, b) => b.id.localeCompare(a.id))
+    .slice(0, 10);
 
   const heroSlides = [
     {
@@ -248,6 +252,19 @@ export function Home({ onNavigate, onAddToCart, cartItemCount, searchQuery, acti
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {bestSellers.map(renderProductCard)}
+          </div>
+        </section>
+
+        {/* New Arrivals */}
+        <section className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">New Arrivals</h2>
+            <Button variant="ghost" size="sm" onClick={() => onNavigate('products')}>
+              See All <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {newArrivals.map(renderProductCard)}
           </div>
         </section>
 

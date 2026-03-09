@@ -26,7 +26,7 @@ type SortOption = 'popular' | 'newest' | 'price-low' | 'price-high' | 'rating';
 export function ProductListing({ onNavigate, onBack, onAddToCart, cartItemCount, selectedCategory, searchQuery }: ProductListingProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [sortBy, setSortBy] = useState<SortOption>('popular');
-  const [priceRange, setPriceRange] = useState([0, 1000]); // Increased max price
+  const [priceRange, setPriceRange] = useState([0, 1000000]); // Increased max price
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [minRating, setMinRating] = useState(0);
   const [products, setProducts] = useState<Product[]>([]);
@@ -102,8 +102,8 @@ export function ProductListing({ onNavigate, onBack, onAddToCart, cartItemCount,
           <Slider
             value={priceRange}
             onValueChange={setPriceRange}
-            max={1000}
-            step={10}
+            max={1000000}
+            step={100}
             className="mb-4"
           />
           <div className="flex justify-between items-center gap-4">
@@ -175,7 +175,7 @@ export function ProductListing({ onNavigate, onBack, onAddToCart, cartItemCount,
           variant="ghost"
           className="w-full"
           onClick={() => {
-            setPriceRange([0, 1000]);
+            setPriceRange([0, 1000000]);
             setSelectedCategories([]);
             setMinRating(0);
           }}
@@ -319,7 +319,7 @@ export function ProductListing({ onNavigate, onBack, onAddToCart, cartItemCount,
               >
                 <SlidersHorizontal className="h-4 w-4 mr-2" />
                 Filters
-                {(selectedCategories.length > 0 || minRating > 0 || priceRange[0] > 0 || priceRange[1] < 1000) && (
+                {(selectedCategories.length > 0 || minRating > 0 || priceRange[0] > 0 || priceRange[1] < 1000000) && (
                     <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full border-2 border-background" />
                 )}
               </Button>

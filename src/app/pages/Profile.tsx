@@ -116,6 +116,16 @@ export function Profile({ onNavigate, onBack, onLogout, cartItemCount }: Profile
     },
   ];
 
+  const formatCurrency = (value: number) => {
+    if (value >= 1000000) {
+      return `₦${(value / 1000000).toFixed(1)}M`;
+    }
+    if (value >= 10000) {
+      return `₦${(value / 1000).toFixed(1)}K`;
+    }
+    return `₦${value.toLocaleString()}`;
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20 lg:pb-0">
       <MobileHeader 
@@ -155,23 +165,25 @@ export function Profile({ onNavigate, onBack, onLogout, cartItemCount }: Profile
         </Card>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-3 md:gap-4">
           <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => onNavigate('orders')}>
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold">{orderCount}</p>
-              <p className="text-xs text-muted-foreground">Orders</p>
+            <CardContent className="p-3 md:p-4 text-center">
+              <p className="text-xl md:text-2xl font-bold">{orderCount}</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold">Orders</p>
             </CardContent>
           </Card>
           <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => onNavigate('wishlist')}>
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold">{wishlistCount}</p>
-              <p className="text-xs text-muted-foreground">Wishlist</p>
+            <CardContent className="p-3 md:p-4 text-center">
+              <p className="text-xl md:text-2xl font-bold">{wishlistCount}</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold">Wishlist</p>
             </CardContent>
           </Card>
           <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold">₦{totalSpent.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground">Spent</p>
+            <CardContent className="p-3 md:p-4 text-center overflow-hidden">
+              <p className="text-lg md:text-2xl font-bold truncate" title={`₦${totalSpent.toLocaleString()}`}>
+                {formatCurrency(totalSpent)}
+              </p>
+              <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider font-semibold">Spent</p>
             </CardContent>
           </Card>
         </div>

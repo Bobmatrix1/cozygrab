@@ -141,9 +141,6 @@ export function AdminProducts({ onNavigate, onLogout, onBack }: AdminProductsPro
             toast.success('Product updated successfully!');
         } else {
             // New product defaults
-            productData.featured = false;
-            productData.bestSeller = false;
-            productData.flashDeal = false;
             productData.rating = 0;
             productData.reviewCount = 0;
             await createProduct(productData);
@@ -260,8 +257,8 @@ export function AdminProducts({ onNavigate, onLogout, onBack }: AdminProductsPro
                             id="price" 
                             type="number" 
                             placeholder="0.00" 
-                            value={formData.price}
-                            onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value)})}
+                            value={formData.price ?? ''}
+                            onChange={(e) => setFormData({...formData, price: e.target.value === '' ? undefined : parseFloat(e.target.value)})}
                         />
                       </div>
                       <div className="space-y-2">
@@ -270,8 +267,8 @@ export function AdminProducts({ onNavigate, onLogout, onBack }: AdminProductsPro
                             id="originalPrice" 
                             type="number" 
                             placeholder="0.00" 
-                            value={formData.originalPrice}
-                            onChange={(e) => setFormData({...formData, originalPrice: parseFloat(e.target.value)})}
+                            value={formData.originalPrice ?? ''}
+                            onChange={(e) => setFormData({...formData, originalPrice: e.target.value === '' ? undefined : parseFloat(e.target.value)})}
                         />
                       </div>
                     </div>
@@ -292,8 +289,8 @@ export function AdminProducts({ onNavigate, onLogout, onBack }: AdminProductsPro
                             id="stock" 
                             type="number" 
                             placeholder="0" 
-                            value={formData.stock}
-                            onChange={(e) => setFormData({...formData, stock: parseInt(e.target.value)})}
+                            value={formData.stock ?? ''}
+                            onChange={(e) => setFormData({...formData, stock: e.target.value === '' ? undefined : parseInt(e.target.value)})}
                         />
                       </div>
                     </div>
