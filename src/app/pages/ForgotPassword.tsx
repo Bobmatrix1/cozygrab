@@ -31,7 +31,7 @@ export function ForgotPassword({ onNavigate }: ForgotPasswordProps) {
       <div className="p-4 border-b">
         <div className="flex items-center justify-center gap-2">
           <ShoppingBag className="h-6 w-6 text-primary" />
-          <span className="text-xl font-semibold">Quick Mart</span>
+          <span className="text-xl font-semibold">CozyGrab</span>
         </div>
       </div>
 

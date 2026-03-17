@@ -282,7 +282,7 @@ export function AdminSettings({ onNavigate, onLogout, onBack }: AdminSettingsPro
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="adminEmail">Email</Label>
-                    <Input id="adminEmail" type="email" defaultValue="admin@quickmart.com" />
+                    <Input id="adminEmail" type="email" defaultValue="admin@cozygrab.com" />
                   </div>
                   <Button onClick={() => toast.success("Admin profile updated")}>Update Profile</Button>
                 </CardContent>

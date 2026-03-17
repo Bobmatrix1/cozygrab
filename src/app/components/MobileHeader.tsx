@@ -79,7 +79,7 @@ export function MobileHeader({
                   <SheetHeader>
                     <SheetTitle className="flex items-center gap-2">
                       <ShoppingBag className="h-6 w-6 text-primary" />
-                      Quick Mart
+                      CozyGrab
                     </SheetTitle>
                     <SheetDescription>Store navigation and account settings.</SheetDescription>
                   </SheetHeader>
@@ -150,7 +150,7 @@ export function MobileHeader({
               
               <button onClick={() => onNavigate('home')} className="flex items-center gap-2">
                 <ShoppingBag className="h-6 w-6 text-primary" />
-                <span className="text-xl font-semibold">Quick Mart</span>
+                <span className="text-xl font-semibold">CozyGrab</span>
               </button>
              </>
           )}

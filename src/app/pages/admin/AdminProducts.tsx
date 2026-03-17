@@ -28,8 +28,15 @@ import { Plus, Search, Edit, Trash2, MoreVertical, Loader2, UploadCloud, X, Arro
 import type { Product } from '../../data/mock-data';
 import { toast } from 'sonner';
 import type { Page } from '../../App';
-import { getProducts, createProduct, updateProduct, deleteProduct } from '../../../services/db';
+import { getProducts, createProduct, updateProduct, deleteProduct, getCategories } from '../../../services/db';
 import { uploadToCloudinary } from '../../../lib/cloudinary';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "../../components/ui/select";
 
 interface AdminProductsProps {
   onNavigate: (page: Page) => void;
@@ -39,12 +46,17 @@ interface AdminProductsProps {
 
 export function AdminProducts({ onNavigate, onLogout, onBack }: AdminProductsProps) {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [stagedPreviews, setStagedPreviews] = useState<string[]>([]);
+  const [bulkProducts, setBulkProducts] = useState<any[]>([{ name: '', price: '', category: '', stock: '', file: null, preview: '' }]);
 
   // Form state
   const [formData, setFormData] = useState<Partial<Product>>({
@@ -54,6 +66,7 @@ export function AdminProducts({ onNavigate, onLogout, onBack }: AdminProductsPro
     category: '',
     description: '',
     image: '',
+    images: [],
     stock: 0,
     inStock: true,
     featured: false,
@@ -62,8 +75,86 @@ export function AdminProducts({ onNavigate, onLogout, onBack }: AdminProductsPro
     colors: [],
     sizes: []
   });
+
+  const handleBulkAddRow = () => {
+    setBulkProducts([...bulkProducts, { name: '', price: '', category: '', stock: '', file: null, preview: '' }]);
+  };
+
+  const removeBulkRow = (index: number) => {
+    if (bulkProducts.length > 1) {
+      const p = bulkProducts[index];
+      if (p.preview) URL.revokeObjectURL(p.preview);
+      setBulkProducts(bulkProducts.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateBulkRow = (index: number, field: string, value: any) => {
+    const newBulk = [...bulkProducts];
+    newBulk[index][field] = value;
+    setBulkProducts(newBulk);
+  };
+
+  const handleBulkFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files[0]) {
+          const file = e.target.files[0];
+          const preview = URL.createObjectURL(file);
+          updateBulkRow(index, 'file', file);
+          updateBulkRow(index, 'preview', preview);
+      }
+  };
+
+  const handleSaveBulkProducts = async () => {
+    const validProducts = bulkProducts.filter(p => p.name && p.price && p.category);
+    if (validProducts.length === 0) {
+      toast.error("Please fill in at least one product with name, price, and category");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const promises = validProducts.map(async (p) => {
+        let imageUrl = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800';
+        if (p.file) {
+            imageUrl = await uploadToCloudinary(p.file);
+        }
+
+        return createProduct({
+          name: p.name,
+          price: parseFloat(p.price),
+          category: p.category,
+          stock: parseInt(p.stock) || 0,
+          description: `Bulk added product: ${p.name}`,
+          image: imageUrl,
+          inStock: (parseInt(p.stock) || 0) > 0,
+          rating: 0,
+          reviewCount: 0,
+          featured: false,
+          bestSeller: false,
+          flashDeal: false,
+          colors: [],
+          sizes: []
+        } as any);
+      });
+
+      await Promise.all(promises);
+      toast.success(`Successfully added ${validProducts.length} products`);
+      
+      // Clean up previews
+      bulkProducts.forEach(p => p.preview && URL.revokeObjectURL(p.preview));
+      
+      setIsBulkDialogOpen(false);
+      setBulkProducts([{ name: '', price: '', category: '', stock: '', file: null, preview: '' }]);
+      fetchProducts();
+    } catch (error) {
+      console.error("Bulk add products error", error);
+      toast.error("Failed to add some products");
+    } finally {
+      setUploading(false);
+    }
+  };
   const [colorInput, setColorInput] = useState('');
   const [sizeInput, setSizeInput] = useState('');
+  const [multipleImageInput, setMultipleImageInput] = useState('');
 
   const addColor = () => {
       if (colorInput && !formData.colors?.includes(colorInput)) {
@@ -79,6 +170,13 @@ export function AdminProducts({ onNavigate, onLogout, onBack }: AdminProductsPro
       }
   };
 
+  const addImageUrl = () => {
+      if (multipleImageInput && !formData.images?.includes(multipleImageInput)) {
+          setFormData({ ...formData, images: [...(formData.images || []), multipleImageInput] });
+          setMultipleImageInput('');
+      }
+  };
+
   const removeColor = (color: string) => {
       setFormData({ ...formData, colors: formData.colors?.filter(c => c !== color) });
   };
@@ -87,8 +185,13 @@ export function AdminProducts({ onNavigate, onLogout, onBack }: AdminProductsPro
       setFormData({ ...formData, sizes: formData.sizes?.filter(s => s !== size) });
   };
 
+  const removeImage = (index: number) => {
+      setFormData({ ...formData, images: formData.images?.filter((_, i) => i !== index) });
+  };
+
   useEffect(() => {
       fetchProducts();
+      fetchCategories();
   }, []);
 
   const fetchProducts = async () => {
@@ -104,6 +207,15 @@ export function AdminProducts({ onNavigate, onLogout, onBack }: AdminProductsPro
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+        const data = await getCategories();
+        setCategories(data);
+    } catch (error) {
+        console.error("Failed to fetch categories", error);
+    }
+  };
+
   const filteredProducts = products.filter(
     (product) =>
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -116,6 +228,25 @@ export function AdminProducts({ onNavigate, onLogout, onBack }: AdminProductsPro
       }
   };
 
+  const handleMultipleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files) {
+          const filesArray = Array.from(e.target.files);
+          setSelectedFiles(prev => [...prev, ...filesArray]);
+          
+          const newPreviews = filesArray.map(file => URL.createObjectURL(file));
+          setStagedPreviews(prev => [...prev, ...newPreviews]);
+      }
+  };
+
+  const removeStagedImage = (index: number) => {
+      setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+      setStagedPreviews(prev => {
+          const newPreviews = prev.filter((_, i) => i !== index);
+          URL.revokeObjectURL(prev[index]);
+          return newPreviews;
+      });
+  };
+
   const handleSaveProduct = async () => {
     if (!formData.name || !formData.price) {
         toast.error("Please fill in required fields");
@@ -125,14 +256,22 @@ export function AdminProducts({ onNavigate, onLogout, onBack }: AdminProductsPro
     setUploading(true);
     try {
         let imageUrl = formData.image || '';
+        let additionalImages = [...(formData.images || [])];
         
         if (selectedFile) {
             imageUrl = await uploadToCloudinary(selectedFile);
         }
 
+        if (selectedFiles.length > 0) {
+            const uploadPromises = selectedFiles.map(file => uploadToCloudinary(file));
+            const uploadedUrls = await Promise.all(uploadPromises);
+            additionalImages = [...additionalImages, ...uploadedUrls];
+        }
+
         const productData: any = {
             ...formData,
             image: imageUrl || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800', // Fallback
+            images: additionalImages,
             inStock: (formData.stock || 0) > 0,
         };
 
@@ -180,6 +319,7 @@ export function AdminProducts({ onNavigate, onLogout, onBack }: AdminProductsPro
         category: product.category,
         description: product.description,
         image: product.image,
+        images: product.images || [],
         stock: product.stock || 0,
         inStock: product.inStock,
         featured: product.featured || false,
@@ -199,6 +339,7 @@ export function AdminProducts({ onNavigate, onLogout, onBack }: AdminProductsPro
           category: '', 
           description: '', 
           image: '', 
+          images: [],
           stock: 0,
           featured: false,
           bestSeller: false,
@@ -207,6 +348,9 @@ export function AdminProducts({ onNavigate, onLogout, onBack }: AdminProductsPro
           sizes: []
       });
       setSelectedFile(null);
+      setSelectedFiles([]);
+      stagedPreviews.forEach(url => URL.revokeObjectURL(url));
+      setStagedPreviews([]);
       setEditingId(null);
   };
 
@@ -228,13 +372,133 @@ export function AdminProducts({ onNavigate, onLogout, onBack }: AdminProductsPro
                 <h1 className="text-2xl font-semibold">Products</h1>
                 <p className="text-sm text-muted-foreground">Manage your product catalog</p>
               </div>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button onClick={openAddDialog}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Product
-                  </Button>
-                </DialogTrigger>
+              <div className="flex gap-2">
+                <Dialog open={isBulkDialogOpen} onOpenChange={setIsBulkDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Bulk Add
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Bulk Add Products</DialogTitle>
+                      <DialogDescription>
+                        Quickly add multiple products with basic information.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                      <div className="grid grid-cols-12 gap-2 px-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        <div className="col-span-1">Img</div>
+                        <div className="col-span-3">Product Name*</div>
+                        <div className="col-span-3">Category*</div>
+                        <div className="col-span-2">Price*</div>
+                        <div className="col-span-2">Stock</div>
+                        <div className="col-span-1"></div>
+                      </div>
+
+                      {bulkProducts.map((p, index) => (
+                        <div key={index} className="grid grid-cols-12 gap-2 items-center">
+                          <div className="col-span-1">
+                            <Label htmlFor={`bulk-file-${index}`} className="cursor-pointer block aspect-square border-2 border-dashed rounded-md overflow-hidden relative group">
+                                {p.preview ? (
+                                    <img src={p.preview} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-muted">
+                                        <UploadCloud className="h-4 w-4 text-muted-foreground" />
+                                    </div>
+                                )}
+                                <Input 
+                                    id={`bulk-file-${index}`}
+                                    type="file" 
+                                    accept="image/*" 
+                                    className="hidden" 
+                                    onChange={(e) => handleBulkFileChange(index, e)}
+                                />
+                            </Label>
+                          </div>
+                          <div className="col-span-3">
+                            <Input 
+                              placeholder="Name" 
+                              value={p.name} 
+                              onChange={(e) => updateBulkRow(index, 'name', e.target.value)}
+                            />
+                          </div>
+                          <div className="col-span-3">
+                            <Select 
+                                value={p.category} 
+                                onValueChange={(value) => updateBulkRow(index, 'category', value)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Category" />
+                                </SelectTrigger>
+                                <SelectContent className="z-[101]">
+                                    {categories.map((cat) => (
+                                        <SelectItem key={cat.id} value={cat.name}>
+                                            {cat.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="col-span-2">
+                            <Input 
+                              type="number" 
+                              placeholder="0.00" 
+                              value={p.price} 
+                              onChange={(e) => updateBulkRow(index, 'price', e.target.value)}
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <Input 
+                              type="number" 
+                              placeholder="0" 
+                              value={p.stock} 
+                              onChange={(e) => updateBulkRow(index, 'stock', e.target.value)}
+                            />
+                          </div>
+                          <div className="col-span-1 text-right">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              disabled={bulkProducts.length === 1}
+                              onClick={() => removeBulkRow(index)}
+                              className="text-destructive h-8 w-8"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      <Button variant="ghost" size="sm" onClick={handleBulkAddRow} className="w-full border-dashed border-2 py-6">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Another Row
+                      </Button>
+
+                      <p className="text-xs text-muted-foreground pt-2 italic">
+                        * Bulk added products will use a default image and description which you can edit later.
+                      </p>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsBulkDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleSaveBulkProducts} disabled={uploading}>
+                        {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save All Products
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button onClick={openAddDialog}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Product
+                    </Button>
+                  </DialogTrigger>
+              ...
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>{editingId ? 'Edit Product' : 'Add New Product'}</DialogTitle>
@@ -276,12 +540,27 @@ export function AdminProducts({ onNavigate, onLogout, onBack }: AdminProductsPro
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="category">Category</Label>
-                        <Input 
-                            id="category" 
-                            placeholder="Select category" 
-                            value={formData.category}
-                            onChange={(e) => setFormData({...formData, category: e.target.value})}
-                        />
+                        <Select 
+                            value={formData.category} 
+                            onValueChange={(value) => setFormData({...formData, category: value})}
+                        >
+                            <SelectTrigger id="category">
+                                <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent className="z-[100]">
+                                {categories.length > 0 ? (
+                                    categories.map((cat) => (
+                                        <SelectItem key={cat.id} value={cat.name}>
+                                            {cat.name}
+                                        </SelectItem>
+                                    ))
+                                ) : (
+                                    <SelectItem value="uncategorized" disabled>
+                                        No categories found
+                                    </SelectItem>
+                                )}
+                            </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="stock">Stock Quantity</Label>
@@ -376,24 +655,80 @@ export function AdminProducts({ onNavigate, onLogout, onBack }: AdminProductsPro
                         onChange={(e) => setFormData({...formData, description: e.target.value})}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="image">Image</Label>
-                      <div className="flex gap-2">
-                          <Input 
-                            type="file" 
-                            accept="image/*" 
-                            onChange={handleFileChange} 
-                          />
+                      <div className="space-y-2">
+                        <Label htmlFor="image">Main Product Image</Label>
+                        <div className="flex gap-2">
+                            <Input 
+                                type="file" 
+                                accept="image/*" 
+                                onChange={handleFileChange} 
+                            />
+                        </div>
+                        <p className="text-xs text-muted-foreground">Or enter URL manually:</p>
+                        <Input 
+                            id="image" 
+                            placeholder="https://example.com/main-image.jpg" 
+                            value={formData.image}
+                            onChange={(e) => setFormData({...formData, image: e.target.value})}
+                        />
                       </div>
-                      <p className="text-xs text-muted-foreground">Or enter URL manually:</p>
-                      <Input 
-                        id="image" 
-                        placeholder="https://example.com/image.jpg" 
-                        value={formData.image}
-                        onChange={(e) => setFormData({...formData, image: e.target.value})}
-                      />
+
+                      <div className="space-y-4 pt-4 border-t">
+                        <Label>Additional Product Images (for different angles)</Label>
+                        <div className="space-y-2">
+                            <Input 
+                                type="file" 
+                                accept="image/*" 
+                                multiple
+                                onChange={handleMultipleFilesChange} 
+                            />
+                            <p className="text-xs text-muted-foreground">Upload multiple images from your device</p>
+                        </div>
+                        
+                        {(stagedPreviews.length > 0 || (formData.images && formData.images.length > 0)) && (
+                            <div className="grid grid-cols-4 gap-2 mt-2">
+                                {/* Saved Images */}
+                                {formData.images?.map((url, index) => (
+                                    <div key={`saved-${index}`} className="relative group aspect-square border rounded-md overflow-hidden bg-muted">
+                                        <img src={url} alt={`Product ${index + 1}`} className="w-full h-full object-cover" />
+                                        <button 
+                                            type="button"
+                                            onClick={() => removeImage(index)}
+                                            className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </button>
+                                        <Badge className="absolute bottom-1 left-1 bg-primary/80 text-[8px] h-3 px-1">Saved</Badge>
+                                    </div>
+                                ))}
+                                {/* Staged Images */}
+                                {stagedPreviews.map((url, index) => (
+                                    <div key={`staged-${index}`} className="relative group aspect-square border-2 border-dashed border-primary/50 rounded-md overflow-hidden bg-muted">
+                                        <img src={url} alt={`Staged ${index + 1}`} className="w-full h-full object-cover" />
+                                        <button 
+                                            type="button"
+                                            onClick={() => removeStagedImage(index)}
+                                            className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </button>
+                                        <Badge className="absolute bottom-1 left-1 bg-orange-500/80 text-[8px] h-3 px-1">New</Badge>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        
+                        <div className="flex gap-2 pt-2">
+                            <Input 
+                                placeholder="Add image URL manually" 
+                                value={multipleImageInput} 
+                                onChange={(e) => setMultipleImageInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addImageUrl())}
+                            />
+                            <Button type="button" size="sm" variant="secondary" onClick={addImageUrl}>Add URL</Button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                       Cancel
@@ -407,7 +742,8 @@ export function AdminProducts({ onNavigate, onLogout, onBack }: AdminProductsPro
               </Dialog>
             </div>
           </div>
-        </header>
+        </div>
+      </header>
 
         {/* Content */}
         <main className="p-6 space-y-6">

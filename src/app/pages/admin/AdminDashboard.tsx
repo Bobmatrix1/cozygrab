@@ -119,11 +119,20 @@ export function AdminDashboard({ onNavigate, onLogout, onBack }: AdminDashboardP
       <div className="lg:pl-64">
         {/* Header */}
         <header className="bg-white border-b sticky top-0 z-40">
-          <div className="p-6 flex items-center gap-4 pl-16 lg:pl-6">
+          <div className="p-6 flex items-center justify-between pl-16 lg:pl-6">
             <div>
                 <h1 className="text-2xl font-semibold">Dashboard</h1>
                 <p className="text-sm text-muted-foreground">Welcome back! Here's your business overview</p>
             </div>
+            <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => onNavigate('home' as Page)}
+                className="hidden md:flex items-center gap-2"
+            >
+                <ArrowLeft className="h-4 w-4" />
+                Back to Store
+            </Button>
           </div>
         </header>
 
@@ -143,23 +152,27 @@ export function AdminDashboard({ onNavigate, onLogout, onBack }: AdminDashboardP
             </div>
           )}
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
             {statCards.map((stat, index) => {
               const Icon = stat.icon;
               const isPositive = stat.change >= 0;
               return (
-                <Card key={index}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-1">{stat.title}</p>
-                        <h3 className="text-2xl font-bold">{stat.value}</h3>
-                        <p className={`text-sm mt-2 flex items-center gap-1 ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                          {isPositive ? '+' : ''}{stat.change.toFixed(1)}% 
-                          <span className="text-muted-foreground font-normal ml-1">from last month</span>
-                        </p>
+                <Card key={index} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                  <CardContent className="p-5 md:p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <p className="text-sm font-medium text-muted-foreground truncate">{stat.title}</p>
+                        <h3 className="text-xl md:text-2xl font-bold tracking-tight break-words leading-none">
+                          {stat.value}
+                        </h3>
+                        <div className={`text-xs md:text-sm pt-1 flex flex-wrap items-center gap-1.5 ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                          <span className="font-bold inline-flex items-center">
+                            {isPositive ? '+' : ''}{stat.change.toFixed(1)}%
+                          </span>
+                          <span className="text-muted-foreground font-normal whitespace-nowrap">vs last month</span>
+                        </div>
                       </div>
-                      <div className={`p-3 rounded-lg bg-accent ${stat.color}`}>
+                      <div className={`p-3 rounded-xl bg-accent/50 shrink-0 ${stat.color} flex items-center justify-center`}>
                         <Icon className="h-6 w-6" />
                       </div>
                     </div>

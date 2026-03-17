@@ -1,4 +1,4 @@
-// Mock data for Quick Mart E-commerce App
+// Mock data for CozyGrab E-commerce App
 
 export interface Product {
   id: string;
@@ -6,6 +6,7 @@ export interface Product {
   price: number;
   originalPrice?: number;
   image: string;
+  images?: string[];
   category: string;
   rating: number;
   reviewCount: number;

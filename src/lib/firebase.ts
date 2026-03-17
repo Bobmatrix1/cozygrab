@@ -1,20 +1,21 @@
-
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { initializeFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage"; 
+import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBUFqWT3P9o_lKTuCVkxLxdyRdm8PHDTrI",
-  authDomain: "quick-mart-7c9db.firebaseapp.com",
-  projectId: "quick-mart-7c9db",
-  storageBucket: "quick-mart-7c9db.firebasestorage.app",
-  messagingSenderId: "1060780981716",
-  appId: "1:1060780981716:web:7e8a590e8d9d771cf22a41",
-  measurementId: "G-QQL4NQSH7X"
+  apiKey: "AIzaSyC7e6H468SWbdcuxgSZdDKk-9AvOlqAHTE",
+  authDomain: "cozygrab-cb8f0.firebaseapp.com",
+  projectId: "cozygrab-cb8f0",
+  storageBucket: "cozygrab-cb8f0.firebasestorage.app",
+  messagingSenderId: "740293166317",
+  appId: "1:740293166317:web:3b09bcbcc5f3a921e038e4",
+  measurementId: "G-6LJGRJYSG9"
 };
 
 const app = initializeApp(firebaseConfig);
+export const analytics = getAnalytics(app);
 export const auth = getAuth(app);
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,

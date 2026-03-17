@@ -51,7 +51,7 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
               <ShoppingBag className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <h1 className="text-3xl font-semibold mb-2">Quick Mart Admin</h1>
+          <h1 className="text-3xl font-semibold mb-2">CozyGrab Admin</h1>
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <Shield className="h-4 w-4" />
             <span>Secure Admin Portal</span>
@@ -65,7 +65,7 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@quickmart.com"
+                placeholder="admin@cozygrab.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required

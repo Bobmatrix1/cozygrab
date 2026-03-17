@@ -148,8 +148,8 @@ export const getStoreSettings = async (): Promise<any> => {
     }
     // Default settings if none exist
     return {
-        storeName: 'Quick Mart',
-        storeEmail: 'contact@quickmart.com',
+        storeName: 'CozyGrab',
+        storeEmail: 'contact@cozygrab.com',
         storePhone: '+234 000 000 0000',
         storeAddress: 'Lagos, Nigeria',
         maintenanceMode: false,

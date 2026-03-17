@@ -227,7 +227,7 @@ export function Profile({ onNavigate, onBack, onLogout, cartItemCount }: Profile
 
         {/* Version Info */}
         <div className="text-center text-sm text-muted-foreground">
-          <p>Quick Mart v1.0.0</p>
+          <p>CozyGrab v1.0.0</p>
           <div className="flex items-center justify-center gap-4 mt-2">
             <button className="hover:text-foreground">Privacy Policy</button>
             <span>•</span>

@@ -293,7 +293,7 @@ export function Home({ onNavigate, onAddToCart, cartItemCount, searchQuery, acti
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <ShoppingBag className="h-6 w-6 text-primary" />
-                <span className="text-xl font-bold">Quick Mart</span>
+                <span className="text-xl font-bold">CozyGrab</span>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Your one-stop shop for everything you need. Quality products, competitive prices, and fast delivery to your doorstep.
@@ -346,14 +346,14 @@ export function Home({ onNavigate, onAddToCart, cartItemCount, searchQuery, acti
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Mail className="h-4 w-4 text-primary shrink-0" />
-                <span className="text-muted-foreground">contact@quickmart.com</span>
+                <span className="text-muted-foreground">contact@cozygrab.com</span>
               </div>
             </div>
           </div>
 
           <div className="max-w-6xl mx-auto px-4 mt-12 pt-8 border-t">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-muted-foreground">
-              <p>© {currentYear} Quick Mart. All rights reserved.</p>
+              <p>© {currentYear} CozyGrab. All rights reserved.</p>
               <div className="flex gap-6">
                 <span>Visa</span>
                 <span>Mastercard</span>

@@ -110,7 +110,7 @@ export function ProductDetails({ product: initialProduct, productId, onNavigate,
        </div>;
   }
 
-  const images = [product.image, product.image, product.image];
+  const images = product ? [product.image, ...(product.images || [])] : [];
 
   const handleAddToCart = () => {
     onAddToCart(product, quantity, selectedColor, selectedSize);

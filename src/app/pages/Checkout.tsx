@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent } from '../components/ui/card';
@@ -16,7 +16,22 @@ import {
     DialogFooter,
     DialogClose
 } from '../components/ui/dialog';
-import { ArrowLeft, CreditCard, Wallet, Building2, Check, Loader2, Plus, Trash2 } from 'lucide-react';
+import { 
+    ArrowLeft, 
+    CreditCard, 
+    Wallet, 
+    Building2, 
+    Check, 
+    Loader2, 
+    Plus, 
+    Trash2, 
+    Lock, 
+    ShieldCheck, 
+    Smartphone, 
+    AlertCircle,
+    ChevronRight,
+    Building
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { mockAddresses as initialAddresses, type CartItem } from '../data/mock-data';
 import type { Page } from '../App';
@@ -29,8 +44,26 @@ interface CheckoutProps {
   onClearCart: () => void;
 }
 
+const SUPPORTED_BANKS = [
+    { name: 'Access Bank', id: 'access' },
+    { name: 'GTBank', id: 'gtb' },
+    { name: 'Zenith Bank', id: 'zenith' },
+    { name: 'First Bank', id: 'firstbank' },
+    { name: 'UBA', id: 'uba' },
+    { name: 'Kuda Bank', id: 'kuda' },
+    { name: 'Moniepoint', id: 'moniepoint' },
+    { name: 'Opay', id: 'opay' },
+];
+
+const WALLET_PROVIDERS = [
+    { name: 'PalmPay', id: 'palmpay' },
+    { name: 'Opay Wallet', id: 'opay' },
+    { name: 'Flutterwave', id: 'flw' },
+    { name: 'Paystack', id: 'pstk' },
+];
+
 export function Checkout({ items, onNavigate, onClearCart }: CheckoutProps) {
-  const [step, setStep] = useState<'address' | 'delivery' | 'payment' | 'confirmation'>('address');
+  const [step, setStep] = useState<'address' | 'delivery' | 'payment' | 'simulating' | 'confirmation'>('address');
   const [addresses, setAddresses] = useState(initialAddresses);
   const [selectedAddress, setSelectedAddress] = useState(initialAddresses[0].id);
   const [deliveryMethod, setDeliveryMethod] = useState('standard');
@@ -38,7 +71,11 @@ export function Checkout({ items, onNavigate, onClearCart }: CheckoutProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderId, setOrderId] = useState<string>('');
   
-  // New Address Modal State
+  // Payment Simulation State
+  const [simulatingStep, setSimulatingStep] = useState<'processing' | 'security' | 'success'>('processing');
+  const [selectedBank, setSelectedBank] = useState<string>('');
+  const [selectedWallet, setSelectedWallet] = useState<string>('');
+  const [otp, setOtp] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newAddress, setNewAddress] = useState({
       name: '',
@@ -119,17 +156,21 @@ export function Checkout({ items, onNavigate, onClearCart }: CheckoutProps) {
       toast.success("Address removed");
   };
 
-  const handlePlaceOrder = async () => {
-    if (!user) {
-        toast.error("You must be logged in to place an order.");
-        return;
-    }
+  useEffect(() => {
+      if (step === 'simulating' && simulatingStep === 'security' && otp.length === 6) {
+          const timer = setTimeout(() => {
+              handleFinishPayment();
+          }, 1000);
+          return () => clearTimeout(timer);
+      }
+  }, [otp, step, simulatingStep]);
 
+  const handleFinishPayment = async () => {
+    setSimulatingStep('success');
     setIsProcessing(true);
+    
     try {
         const address = addresses.find(a => a.id === selectedAddress);
-        
-        // Sanitize items: Firestore doesn't support undefined
         const sanitizedItems = items.map(item => ({
             ...item,
             selectedColor: item.selectedColor || null,
@@ -143,16 +184,162 @@ export function Checkout({ items, onNavigate, onClearCart }: CheckoutProps) {
             address || { street: 'Unknown', city: 'Unknown', state: 'Unknown', zipCode: '00000', country: 'Unknown' } 
         );
         setOrderId(newOrderId);
-        toast.success('Order placed successfully!');
+        
+        await new Promise(resolve => setTimeout(resolve, 1500));
         onClearCart();
         setStep('confirmation');
     } catch (error) {
         console.error("Order placement failed", error);
-        toast.error("Failed to place order. Please try again.");
+        toast.error("Payment verified, but order creation failed. Please contact support.");
+        setStep('payment');
     } finally {
         setIsProcessing(false);
     }
   };
+
+  const handlePlaceOrder = async () => {
+    if (!user) {
+        toast.error("You must be logged in to place an order.");
+        return;
+    }
+
+    if (paymentMethod === 'card' && (!cardDetails.number || !cardDetails.expiry || !cardDetails.cvv)) {
+        toast.error("Please fill in all card details");
+        return;
+    }
+
+    if (paymentMethod === 'bank' && !selectedBank) {
+        toast.error("Please select a bank");
+        return;
+    }
+
+    if (paymentMethod === 'wallet' && !selectedWallet) {
+        toast.error("Please select a wallet provider");
+        return;
+    }
+
+    setStep('simulating');
+    setSimulatingStep('processing');
+    setOtp('');
+    
+    // Step 1: Simulated Processing
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Step 2: Simulated Security Check (3DS/OTP)
+    setSimulatingStep('security');
+    
+    toast.info("Security code sent. Please enter any 6 digits to authorize.", { duration: 5000 });
+  };
+
+  const renderSimulating = () => {
+      const currentMethod = paymentMethod === 'card' ? 'Card' : paymentMethod === 'bank' ? 'Bank' : 'Wallet';
+      
+      return (
+          <div className="min-h-screen bg-background flex items-center justify-center p-4">
+              <Card className="max-w-md w-full overflow-hidden shadow-2xl border-primary/20">
+                  <div className="bg-primary p-4 text-primary-foreground flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                          <ShieldCheck className="h-5 w-5" />
+                          <span className="font-medium">Secure Payment Gateway</span>
+                      </div>
+                      <Lock className="h-4 w-4 opacity-70" />
+                  </div>
+                  
+                  <CardContent className="p-8 text-center space-y-6">
+                      {simulatingStep === 'processing' && (
+                          <div className="space-y-4 animate-in fade-in zoom-in duration-500">
+                              <div className="relative w-20 h-20 mx-auto">
+                                  <Loader2 className="h-20 w-20 text-primary animate-spin" />
+                                  <div className="absolute inset-0 flex items-center justify-center">
+                                      <CreditCard className="h-8 w-8 text-primary" />
+                                  </div>
+                              </div>
+                              <div>
+                                  <h2 className="text-xl font-semibold">Authorizing Transaction</h2>
+                                  <p className="text-sm text-muted-foreground mt-1">Connecting to {currentMethod} network...</p>
+                              </div>
+                          </div>
+                      )}
+
+                      {simulatingStep === 'security' && (
+                          <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500 text-left">
+                              <div className="flex items-center gap-3 p-3 bg-blue-50 text-blue-700 rounded-lg border border-blue-100">
+                                  <Smartphone className="h-5 w-5" />
+                                  <p className="text-xs font-medium">Verification required. We've sent a code to your mobile device.</p>
+                              </div>
+                              
+                              <div className="space-y-3 relative">
+                                  <h2 className="text-lg font-bold text-center">3D Secure v2.0</h2>
+                                  <p className="text-xs text-muted-foreground text-center mb-4">Please enter the One-Time Password (OTP) to authorize the payment of <span className="font-bold text-foreground">₦{total.toFixed(2)}</span> to <span className="font-bold text-primary">CozyGrab</span>.</p>
+                                  
+                                  {/* Hidden input to capture OTP typing */}
+                                  <input 
+                                    type="text" 
+                                    inputMode="numeric" 
+                                    autoFocus 
+                                    maxLength={6} 
+                                    value={otp} 
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 6);
+                                        setOtp(val);
+                                    }}
+                                    className="absolute inset-0 opacity-0 cursor-default"
+                                  />
+
+                                  <div className="flex justify-center gap-2 mt-4">
+                                      {[1,2,3,4,5,6].map((i) => (
+                                          <div key={i} className={`w-10 h-12 border-2 rounded-md flex items-center justify-center font-bold text-xl transition-all ${otp.length >= i ? 'border-primary bg-primary/5' : 'bg-muted/30'}`}>
+                                              {otp[i-1] || ''}
+                                              {otp.length === i-1 && <span className="w-0.5 h-6 bg-primary animate-pulse" />}
+                                          </div>
+                                      ))}
+                                  </div>
+                                  
+                                  <div className="text-center pt-2">
+                                      <p className="text-[10px] text-muted-foreground mb-1">Didn't get the code?</p>
+                                      <Button variant="link" size="sm" className="text-xs h-auto p-0 text-primary font-bold">Resend OTP</Button>
+                                  </div>
+                              </div>
+                              
+                              <div className="pt-6 border-t flex items-center justify-between opacity-50">
+                                  <div className="flex gap-2">
+                                      <div className="w-8 h-5 bg-slate-200 rounded" />
+                                      <div className="w-8 h-5 bg-slate-200 rounded" />
+                                  </div>
+                                  <div className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-tighter">
+                                      <Lock className="h-2 w-2" />
+                                      PCI DSS Compliant
+                                  </div>
+                              </div>
+                          </div>
+                      )}
+
+                      {simulatingStep === 'success' && (
+                          <div className="space-y-4 animate-in fade-in zoom-in duration-500">
+                              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto ring-8 ring-green-50">
+                                  <Check className="h-10 w-10 text-green-600" />
+                              </div>
+                              <div>
+                                  <h2 className="text-xl font-semibold text-green-700">Payment Verified</h2>
+                                  <p className="text-sm text-muted-foreground mt-1">Transaction hash: {Math.random().toString(36).substring(7).toUpperCase()}</p>
+                              </div>
+                              <div className="pt-4">
+                                  <div className="flex items-center justify-center gap-2 text-xs font-medium text-muted-foreground">
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                      REDIRECTING TO MERCHANT...
+                                  </div>
+                              </div>
+                          </div>
+                      )}
+                  </CardContent>
+              </Card>
+          </div>
+      );
+  };
+
+  if (step === 'simulating') {
+      return renderSimulating();
+  }
 
   if (step === 'confirmation') {
     return (
@@ -428,22 +615,26 @@ export function Checkout({ items, onNavigate, onClearCart }: CheckoutProps) {
                 </RadioGroup>
 
                 {paymentMethod === 'card' && (
-                  <div className="space-y-4 pt-4">
+                  <div className="space-y-4 pt-4 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="space-y-2">
                       <Label htmlFor="cardNumber">Card Number</Label>
-                      <Input 
-                        id="cardNumber" 
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        autoComplete="off"
-                        value={cardDetails.number}
-                        onChange={handleCardNumberChange}
-                        onKeyDown={handleNumericKeyDown}
-                        placeholder="1234567891011121" 
-                        maxLength={16}
-                        required 
-                      />
+                      <div className="relative">
+                          <Input 
+                              id="cardNumber" 
+                              type="text"
+                              inputMode="numeric"
+                              value={cardDetails.number}
+                              onChange={handleCardNumberChange}
+                              onKeyDown={handleNumericKeyDown}
+                              placeholder="0000 0000 0000 0000" 
+                              maxLength={16}
+                              required 
+                              className="pr-12"
+                          />
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1">
+                              <div className="w-8 h-5 bg-slate-100 border rounded flex items-center justify-center text-[8px] font-bold">VISA</div>
+                          </div>
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
@@ -452,8 +643,6 @@ export function Checkout({ items, onNavigate, onClearCart }: CheckoutProps) {
                             id="expiry" 
                             type="text"
                             inputMode="numeric"
-                            pattern="[0-9]*"
-                            autoComplete="off"
                             value={cardDetails.expiry}
                             onChange={handleExpiryChange}
                             onKeyDown={handleNumericKeyDown}
@@ -468,8 +657,6 @@ export function Checkout({ items, onNavigate, onClearCart }: CheckoutProps) {
                             id="cvv" 
                             type="text"
                             inputMode="numeric"
-                            pattern="[0-9]*"
-                            autoComplete="off"
                             value={cardDetails.cvv}
                             onChange={handleCVVChange}
                             onKeyDown={handleNumericKeyDown}
@@ -479,7 +666,60 @@ export function Checkout({ items, onNavigate, onClearCart }: CheckoutProps) {
                         />
                       </div>
                     </div>
+                    <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg text-xs text-muted-foreground">
+                      <Lock className="h-3 w-3" />
+                      Your card details are encrypted and securely processed.
+                    </div>
                   </div>
+                )}
+
+                {paymentMethod === 'bank' && (
+                    <div className="space-y-4 pt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <Label>Select your Bank</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                            {SUPPORTED_BANKS.map(bank => (
+                                <div 
+                                    key={bank.id}
+                                    onClick={() => setSelectedBank(bank.id)}
+                                    className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer transition-all ${
+                                        selectedBank === bank.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-primary/50'
+                                    }`}
+                                >
+                                    <Building className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-xs font-medium">{bank.name}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-700 flex gap-2">
+                            <AlertCircle className="h-4 w-4 shrink-0" />
+                            <p>You will be redirected to your bank's secure portal to authorize the transfer.</p>
+                        </div>
+                    </div>
+                )}
+
+                {paymentMethod === 'wallet' && (
+                    <div className="space-y-4 pt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <Label>Select Wallet Provider</Label>
+                        <div className="space-y-2">
+                            {WALLET_PROVIDERS.map(wallet => (
+                                <div 
+                                    key={wallet.id}
+                                    onClick={() => setSelectedWallet(wallet.id)}
+                                    className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all ${
+                                        selectedWallet === wallet.id ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-primary/50'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                                            <Wallet className="h-5 w-5 text-muted-foreground" />
+                                        </div>
+                                        <span className="font-medium">{wallet.name}</span>
+                                    </div>
+                                    <ChevronRight className={`h-5 w-5 transition-transform ${selectedWallet === wallet.id ? 'text-primary' : 'text-muted-foreground'}`} />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 )}
 
                 <div className="flex gap-2">
@@ -488,7 +728,7 @@ export function Checkout({ items, onNavigate, onClearCart }: CheckoutProps) {
                   </Button>
                   <Button onClick={handlePlaceOrder} className="flex-1" disabled={isProcessing}>
                     {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {isProcessing ? 'Placing Order...' : 'Place Order'}
+                    {isProcessing ? 'Processing...' : `Pay ₦${total.toFixed(2)}`}
                   </Button>
                 </div>
               </CardContent>

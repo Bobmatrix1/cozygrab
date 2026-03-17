@@ -1,4 +1,4 @@
-import { ShoppingBag, LayoutDashboard, Package, ShoppingCart, Users, Layers, Settings, LogOut, Menu } from 'lucide-react';
+import { ShoppingBag, LayoutDashboard, Package, ShoppingCart, Users, Layers, Settings, LogOut, Menu, Home } from 'lucide-react';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from './ui/sheet';
@@ -32,16 +32,30 @@ export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebar
     <div className="flex flex-col h-full py-4">
         {/* Logo (Inside Sheet) */}
         <div className="px-6 mb-6">
-            <div className="flex items-center gap-2">
-                <ShoppingBag className="h-6 w-6 text-primary" />
-                <div>
-                    <span className="text-xl font-semibold">Quick Mart</span>
-                    <p className="text-xs text-muted-foreground">Admin Panel</p>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <ShoppingBag className="h-6 w-6 text-primary" />
+                    <div>
+                        <span className="text-xl font-semibold">CozyGrab</span>
+                        <p className="text-xs text-muted-foreground">Admin Panel</p>
+                    </div>
                 </div>
             </div>
         </div>
 
         <Separator className="mb-4" />
+
+        {/* Home Button */}
+        <div className="px-4 mb-4">
+            <Button
+                variant="outline"
+                onClick={() => onNavigate('home' as Page)}
+                className="w-full justify-start gap-3 border-dashed"
+            >
+                <Home className="h-4 w-4" />
+                <span>Back to Home</span>
+            </Button>
+        </div>
 
         {/* Menu */}
         <nav className="flex-1 px-4 space-y-1">
