@@ -17,6 +17,7 @@ import { AdminProducts } from './pages/admin/AdminProducts';
 import { AdminOrders } from './pages/admin/AdminOrders';
 import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminCategories } from './pages/admin/AdminCategories';
+import { AdminBanners } from './pages/admin/AdminBanners';
 import { AdminSettings } from './pages/admin/AdminSettings';
 import { Wishlist } from './pages/Wishlist';
 import { EditProfile } from './pages/EditProfile';
@@ -47,6 +48,7 @@ export type Page =
   | 'admin-orders'
   | 'admin-users'
   | 'admin-categories'
+  | 'admin-banners'
   | 'admin-settings'
   | 'edit-profile'
   | 'addresses'
@@ -226,6 +228,12 @@ export default function App() {
       case 'admin-categories':
         return isAdmin ? (
           <AdminCategories onNavigate={navigateTo} onLogout={handleAdminLogout} onBack={navigateBack} />
+        ) : (
+          <AdminLogin onLogin={handleAdminLogin} />
+        );
+      case 'admin-banners':
+        return isAdmin ? (
+          <AdminBanners onNavigate={navigateTo} onLogout={handleAdminLogout} onBack={navigateBack} />
         ) : (
           <AdminLogin onLogin={handleAdminLogin} />
         );

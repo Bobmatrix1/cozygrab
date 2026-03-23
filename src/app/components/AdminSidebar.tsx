@@ -1,4 +1,4 @@
-import { ShoppingBag, LayoutDashboard, Package, ShoppingCart, Users, Layers, Settings, LogOut, Menu, Home } from 'lucide-react';
+import { ShoppingBag, LayoutDashboard, Package, ShoppingCart, Users, Layers, Settings, LogOut, Menu, Home, Image as ImageIcon } from 'lucide-react';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from './ui/sheet';
@@ -20,6 +20,7 @@ export function AdminSidebar({ currentPage, onNavigate, onLogout }: AdminSidebar
     { id: 'admin-orders' as Page, label: 'Orders', icon: ShoppingCart },
     { id: 'admin-users' as Page, label: 'Users', icon: Users },
     { id: 'admin-categories' as Page, label: 'Categories', icon: Layers },
+    { id: 'admin-banners' as Page, label: 'Banners', icon: ImageIcon },
     { id: 'admin-settings' as Page, label: 'Settings', icon: Settings },
   ];
 

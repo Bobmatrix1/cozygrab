@@ -6,7 +6,7 @@ import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
 import { Star, ChevronRight, Loader2, ShoppingBag, Facebook, Twitter, Instagram, Mail, Phone, MapPin } from 'lucide-react';
 import { type Product } from '../data/mock-data';
-import { getProducts, getCategories } from '../../services/db';
+import { getProducts, getCategories, getBanners, type Banner } from '../../services/db';
 import type { Page } from '../App';
 import { useState, useEffect } from 'react';
 
@@ -22,6 +22,7 @@ export function Home({ onNavigate, onAddToCart, cartItemCount, searchQuery, acti
   const [currentSlide, setCurrentSlide] = useState(0);
   const [products, setProducts] = useState<Product[]>([]);
   const [dbCategories, setDbCategories] = useState<any[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
 
   const currentYear = new Date().getFullYear();
@@ -29,12 +30,14 @@ export function Home({ onNavigate, onAddToCart, cartItemCount, searchQuery, acti
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [productsData, categoriesData] = await Promise.all([
+        const [productsData, categoriesData, bannersData] = await Promise.all([
             getProducts(),
-            getCategories()
+            getCategories(),
+            getBanners()
         ]);
         setProducts(productsData);
         setDbCategories(categoriesData);
+        setBanners(bannersData);
       } catch (error) {
         console.error("Error fetching home data:", error);
       } finally {
@@ -58,20 +61,23 @@ export function Home({ onNavigate, onAddToCart, cartItemCount, searchQuery, acti
     .sort((a, b) => b.id.localeCompare(a.id))
     .slice(0, 10);
 
-  const heroSlides = [
+  const defaultBanners: Banner[] = [
     {
+      id: 'default-1',
       title: 'Summer Sale',
       subtitle: 'Up to 50% off on selected items',
       image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=800',
       cta: 'Shop Now',
     },
     {
+      id: 'default-2',
       title: 'New Arrivals',
       subtitle: 'Discover the latest trends',
       image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800',
       cta: 'Explore',
     },
     {
+      id: 'default-3',
       title: 'Free Shipping',
       subtitle: 'On orders over $50',
       image: 'https://images.unsplash.com/photo-1607082349566-187342175e2f?w=800',
@@ -79,13 +85,15 @@ export function Home({ onNavigate, onAddToCart, cartItemCount, searchQuery, acti
     },
   ];
 
+  const activeBanners = banners.length > 0 ? banners : defaultBanners;
+
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+      setCurrentSlide((prev) => (prev + 1) % activeBanners.length);
     }, 5000);
 
     return () => clearInterval(timer);
-  }, [heroSlides.length]);
+  }, [activeBanners.length]);
 
   const renderProductCard = (product: Product) => (
     <Card
@@ -155,8 +163,8 @@ export function Home({ onNavigate, onAddToCart, cartItemCount, searchQuery, acti
             className="flex transition-transform duration-500 ease-in-out"
             style={{ transform: `translateX(-${currentSlide * 100}%)` }}
           >
-            {heroSlides.map((slide, index) => (
-              <div key={index} className="min-w-full relative">
+            {activeBanners.map((slide, index) => (
+              <div key={slide.id} className="min-w-full relative">
                 <div className="relative h-48 md:h-64 lg:h-80">
                   <img
                     src={slide.image}
@@ -174,7 +182,7 @@ export function Home({ onNavigate, onAddToCart, cartItemCount, searchQuery, acti
             ))}
           </div>
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-            {heroSlides.map((_, index) => (
+            {activeBanners.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentSlide(index)}
